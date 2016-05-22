@@ -8,9 +8,10 @@ public class Player : MovingObject
 {
     public float restartLevelDelay = 1f;        //Delay time in seconds to restart level.
     public int pointsPerFood = 10;              //Number of points to add to player food points when picking up a food object.
-    public int pointsPerSoda = 20;              //Number of points to add to player food points when picking up a soda object.
+    public int pointsPerSoda = 100;             //Number of points to add to player food points when picking up a soda object.
     public int wallDamage = 1;                  //How much damage a player does to a wall when chopping it.
     public Text foodText;                       //UI Text to display current player food total.
+    public Text oxygenText;                     //UI Text to display current player oxygen total.
     public AudioClip moveSound1;                //1 of 2 Audio clips to play when player moves.
     public AudioClip moveSound2;                //2 of 2 Audio clips to play when player moves.
     public AudioClip eatSound1;                 //1 of 2 Audio clips to play when player collects a food object.
@@ -21,6 +22,8 @@ public class Player : MovingObject
 
     private Animator animator;                  //Used to store a reference to the Player's animator component.
     private int food;                           //Used to store player food points total during level.
+    private int oxygen;                         //Used to store player oxygen points total during level.
+    private float currentTime = 0f;
     private Vector2 touchOrigin = -Vector2.one; //Used to store location of screen touch origin for mobile controls.
 
 
@@ -32,9 +35,13 @@ public class Player : MovingObject
 
         //Get the current food point total stored in GameManager.instance between levels.
         food = GameManager.instance.playerFoodPoints;
-
         //Set the foodText to reflect the current player food total.
         foodText.text = "Food: " + food;
+
+        //Get the current oxygen point total stored in GameManager.instance between levels.
+        oxygen = GameManager.instance.playerOxygenPoints;
+        //Set the oxygenText to reflect the current player food total.
+        oxygenText.text = "Oxygen: " + oxygen + "%";
 
         //Call the Start function of the MovingObject base class.
         base.Start();
@@ -46,11 +53,27 @@ public class Player : MovingObject
     {
         //When Player object is disabled, store the current local food total in the GameManager so it can be re-loaded in next level.
         GameManager.instance.playerFoodPoints = food;
+        //When Player object is disabled, store the current local oxygen total in the GameManager so it can be re-loaded in next level.
+        GameManager.instance.playerOxygenPoints = oxygen;
     }
 
 
     private void Update()
     {
+        currentTime += Time.deltaTime;
+
+        if (currentTime > 1)
+        {
+            oxygen--;
+            currentTime -= 1f;
+
+            //Update the oxygen display with the new total.
+            oxygenText.text = "Oxygen: " + oxygen + "%";
+
+            if (oxygen <= 0 && GameManager.instance.playersTurn)
+                CheckIfGameOver();
+        }
+
         //If it's not the player's turn, exit the function.
         if (!GameManager.instance.playersTurn) return;
 
@@ -204,10 +227,10 @@ public class Player : MovingObject
         else if (other.tag == "Soda")
         {
             //Add pointsPerSoda to players food points total
-            food += pointsPerSoda;
+            oxygen = pointsPerSoda;
 
             //Update foodText to represent current total and notify player that they gained points
-            foodText.text = "+" + pointsPerSoda + " Food: " + food;
+            oxygenText.text = "Oxygen :" + oxygen + "%";
 
             //Call the RandomizeSfx function of SoundManager and pass in two drinking sounds to choose between to play the drinking sound effect.
             SoundManager.instance.RandomizeSfx(drinkSound1, drinkSound2);
@@ -248,7 +271,7 @@ public class Player : MovingObject
     private void CheckIfGameOver()
     {
         //Check if food point total is less than or equal to zero.
-        if (food <= 0)
+        if (food <= 0 || oxygen <= 0)
         {
             //Call the PlaySingle function of SoundManager and pass it the gameOverSound as the audio clip to play.
             SoundManager.instance.PlaySingle(gameOverSound);
@@ -256,8 +279,10 @@ public class Player : MovingObject
             //Stop the background music.
             SoundManager.instance.musicSource.Stop();
 
+            GameManager.instance.playersTurn = false;
+
             //Call the GameOver function of GameManager.
-            GameManager.instance.GameOver();
+            GameManager.instance.GameOver(oxygen <= 0);
         }
     }
 }
