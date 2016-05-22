@@ -11,6 +11,7 @@ public class Player : MovingObject
     public int pointsPerSoda = 100;             //Number of points to add to player food points when picking up a soda object.
     public int wallDamage = 1;                  //How much damage a player does to a wall when chopping it.
     public Text foodText;                       //UI Text to display current player food total.
+    public Text healthText;                       //UI Text to display current player health total.
     public Text oxygenText;                     //UI Text to display current player oxygen total.
     public AudioClip moveSound1;                //1 of 2 Audio clips to play when player moves.
     public AudioClip moveSound2;                //2 of 2 Audio clips to play when player moves.
@@ -25,6 +26,7 @@ public class Player : MovingObject
     private int oxygen;                         //Used to store player oxygen points total during level.
     private float currentTime = 0f;
     private Vector2 touchOrigin = -Vector2.one; //Used to store location of screen touch origin for mobile controls.
+    private int health;                           //Used to store player hit points total during level.
 
 
     //Start overrides the Start function of MovingObject
@@ -37,6 +39,11 @@ public class Player : MovingObject
         food = GameManager.instance.playerFoodPoints;
         //Set the foodText to reflect the current player food total.
         foodText.text = "Food: " + food;
+
+        //Get the current health point total stored in GameManager.instance between levels.
+        health = GameManager.instance.playerHitPoints;
+        //Set the healthText to reflect the current player health total.
+        healthText.text = "Health: " + health + "%";
 
         //Get the current oxygen point total stored in GameManager.instance between levels.
         oxygen = GameManager.instance.playerOxygenPoints;
@@ -55,6 +62,9 @@ public class Player : MovingObject
         GameManager.instance.playerFoodPoints = food;
         //When Player object is disabled, store the current local oxygen total in the GameManager so it can be re-loaded in next level.
         GameManager.instance.playerOxygenPoints = oxygen;
+
+        //When Player object is disabled, store the current local health total in the GameManager so it can be re-loaded in next level.
+        GameManager.instance.playerHitPoints = health;
     }
 
 
@@ -157,6 +167,12 @@ public class Player : MovingObject
 
         //Update food text display to reflect current score.
         foodText.text = "Food: " + food;
+
+        //Every time player moves, subtract from health points total.
+        health--;
+
+        //Update health text display to reflect current score.
+        healthText.text = "Health: " + health + "%";
 
         //Call the AttemptMove method of the base class, passing in the component T (in this case Wall) and x and y direction to move.
         base.AttemptMove<T>(xDir, yDir);
